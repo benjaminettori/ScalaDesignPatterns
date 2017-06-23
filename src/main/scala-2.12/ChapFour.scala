@@ -1,3 +1,5 @@
+import scala.collection.mutable
+
 /**
   * Created by bettori on 6/18/2017.
   */
@@ -179,10 +181,50 @@ object ChapFour {
   // Self types
 
   trait Persister[T] {
-    def persist(data: T)
+    // we are pulling in Database[T] functionality
+    // that way we can use the save() method from Database[T]
+    self: Database[T] =>
+      def persist(data: T): Unit = {
+        System.out.println("Calling persist")
+        self.save(data)
+      }
   }
 
-  
+  trait Database[T] {
+    def save(data: T)
+  }
+
+  trait MemoryDatabase[T] extends Database[T] {
+    val db: mutable.MutableList[T] = mutable.MutableList.empty
+
+    override def save(data: T): Unit = {
+      System.out.println("Saving to in memory database")
+      db.+=:(data)
+    }
+  }
+
+  trait FileDatabase[T] extends Database[T] {
+    override def save(data: T): Unit = {
+      System.out.println("Saving to file.")
+    }
+  }
+
+  // class must pull in both Persister[T] and Database[T] with self type
+  class FilePersister[T] extends Persister[T] with FileDatabase[T]
+  class MemoryPersister[T] extends Persister[T] with MemoryDatabase[T]
+
+  object PersisterExample {
+    def main(args: Array[String]): Unit = {
+      val filePersister = new FilePersister[String]
+      val memoryPersister = new MemoryPersister[Int]
+
+      filePersister.persist("Something")
+      memoryPersister.persist(10)
+    }
+  }
+
+
+
 
   def main(args: Array[String]): Unit = {
     GenericsExamples.main(Array())
@@ -190,6 +232,7 @@ object ChapFour {
     PrinterExample.main(Array())
     GenericPrinterEx.main(Array())
     AdhocPoly.main(Array())
+    PersisterExample.main(Array())
   }
 
 }
