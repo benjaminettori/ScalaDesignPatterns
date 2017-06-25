@@ -205,7 +205,7 @@ object ChapFour {
 
   trait FileDatabase[T] extends Database[T] {
     override def save(data: T): Unit = {
-      System.out.println("Saving to file.")
+      System.out.println(s"Saving to file. ${data}")
     }
   }
 
@@ -213,17 +213,40 @@ object ChapFour {
   class FilePersister[T] extends Persister[T] with FileDatabase[T]
   class MemoryPersister[T] extends Persister[T] with MemoryDatabase[T]
 
+  // Requiring multiple components
+  trait History {
+    def add(): Unit = {
+      System.out.println("Action added to history.")
+    }
+  }
+
+  trait PersisterWithHistory[T] {
+    this: Database[T] with History =>
+    def persist(data: T): Unit = {
+      System.out.println("Calling persist.")
+      save(data)
+      add()
+    }
+  }
+
+  class FilePersisterWithHistory[T] extends PersisterWithHistory[T] with FileDatabase[T] with History
+
   object PersisterExample {
     def main(args: Array[String]): Unit = {
       val filePersister = new FilePersister[String]
       val memoryPersister = new MemoryPersister[Int]
+      val fileHistoryPersister = new FilePersisterWithHistory[String]
+
 
       filePersister.persist("Something")
       memoryPersister.persist(10)
+      fileHistoryPersister.persist("Another thing, with history")
     }
   }
 
-
+// Advantage of using self types over inheritance is the same as using dependency injection over inheritance
+  // With self types, we do not pass all inherited methods automatically down the inheritance chain. The required component
+  // methods must actually be used in order to be available in some form to objects inheriting from the calling object.
 
 
   def main(args: Array[String]): Unit = {
